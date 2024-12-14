@@ -13,7 +13,7 @@ import torch
 
 env = gym.make(
     'Ant-v5',
-    xml_file='~/Desktop/Addverb/examples/ant_mujoco_rl/go1_quadruped/go1.xml',
+    xml_file='quadruped_simulation/go1_quadruped/go1.xml',
     forward_reward_weight=1,
     ctrl_cost_weight=0.05,
     contact_cost_weight=5e-4,
