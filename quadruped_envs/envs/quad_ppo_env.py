@@ -11,11 +11,10 @@ DEFAULT_CAMERA_CONFIG = {
 }
 
 class QuadrupedWalkPPO(MujocoEnv, utils.EzPickle):
-    metadata = {"render_modes": {"human, rgb_array"}, "render_fps": 20}
+    metadata = {"render_modes": ["human", "rgb_array", "depth_array"], "render_fps": 100}
 
     def __init__(
         self,
-        xml_file: str,
         frame_skip: int = 5,
         forward_reward_weight: float = 1,
         ctrl_cost_weight: float = 0.05,
@@ -24,6 +23,7 @@ class QuadrupedWalkPPO(MujocoEnv, utils.EzPickle):
         main_body: Union[int, str] = 1,
         terminate_when_unhealthy: bool = True,
         healthy_z_range: Tuple[float, float] = (0.2, 1.0),
+        contact_force_range: Tuple[float, float] = (-1.0, 1.0),
         include_cfrc_ext_in_observation: bool = True,
         exclude_current_positions_from_observation: bool = False,
         reset_noise_scale: float = 0.1,
@@ -33,7 +33,6 @@ class QuadrupedWalkPPO(MujocoEnv, utils.EzPickle):
 
         utils.EzPickle.__init__(
             self,
-            xml_file,
             frame_skip,
             forward_reward_weight,
             ctrl_cost_weight,
@@ -42,6 +41,7 @@ class QuadrupedWalkPPO(MujocoEnv, utils.EzPickle):
             main_body,
             terminate_when_unhealthy,
             healthy_z_range,
+            contact_force_range,
             include_cfrc_ext_in_observation,
             exclude_current_positions_from_observation,
             reset_noise_scale,
@@ -61,18 +61,21 @@ class QuadrupedWalkPPO(MujocoEnv, utils.EzPickle):
         self._exclude_current_positions_from_observation = (exclude_current_positions_from_observation)
         self._include_cfrc_ext_in_observation = include_cfrc_ext_in_observation
 
-        self._main_body = main_body
+        self._contact_force_range = contact_force_range
 
-        super().__init__(
+        self._main_body = main_body
+        
+        observation_space = Box(-np.inf, np.inf, (115,), dtype=np.float64)
+
+        MujocoEnv.__init__(
             self,
-            os.path.normpath(os.path.join(os.path.dirname(__file__), "../go1_quadruped/go1.xml")),
+            os.path.normpath(os.path.join(os.path.dirname(__file__), "../../go1_quadruped/go1.xml")),
             frame_skip,
-            observation_space=None,
+            observation_space=observation_space,
             default_camera_config=default_camera_config,
             **kwargs,
         )
 
-        self.observation_space = Box(-np.inf, np.inf, (107,), dtype=np.float64)
 
         self.observation_structure = {
             "skipped_qpos": 2*exclude_current_positions_from_observation,
@@ -80,6 +83,13 @@ class QuadrupedWalkPPO(MujocoEnv, utils.EzPickle):
             "qvel": self.data.qvel,
             "cfrc_ext": self.data.cfrc_ext[1:].size*include_cfrc_ext_in_observation,
         }
+
+    @property
+    def contact_forces(self):
+        raw_contact_forces = self.data.cfrc_ext
+        min_value, max_value = self._contact_force_range
+        contact_forces = np.clip(raw_contact_forces, min_value, max_value)
+        return contact_forces
 
     @property
     def contact_cost(self):
@@ -132,11 +142,16 @@ class QuadrupedWalkPPO(MujocoEnv, utils.EzPickle):
         return observation
 
     def _get_obs(self):
-        return {
-            "x-position": self.data.qpos[0],
-            "y-position": self.data.qpos[1],
-            "distance_from_origin": np.linalg.norm(self.data.qpos[0:2], ord=2)
-        }
+        position = self.data.qpos.flatten()
+        velocity = self.data.qvel.flatten()
+
+        if self._exclude_current_positions_from_observation:
+            position = position[2:]
+
+        if self._include_cfrc_ext_in_observation:
+            contact_force = self.contact_forces[1:].flatten()
+            return np.concatenate((position, velocity, contact_force))
+        else: return np.concatenate((position, velocity))
        
         
         
