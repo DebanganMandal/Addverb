@@ -82,11 +82,11 @@ from stable_baselines3.common.env_util import make_vec_env
 import cv2
 import imageio
 
-vec_env = QuadrupedWalkPPO(render_mode="human")
+vec_env = QuadrupedWalkPPO(render_mode="rgb_array")
 check_env(vec_env)
-ppo_vec_env = make_vec_env(QuadrupedWalkPPO, n_envs=2)
+ppo_vec_env = make_vec_env(QuadrupedWalkPPO, n_envs=6)
 model = PPO("MlpPolicy", ppo_vec_env, verbose=1)
-model.learn(total_timesteps=15000)
+model.learn(total_timesteps=250000)
 # model.save("ppo_quadruped")
 
 # vec_env = QuadrupedWalkPPO(render_mode="rgb_array")
@@ -95,7 +95,7 @@ model.learn(total_timesteps=15000)
 obs, info = vec_env.reset()
 frames = []
 
-for _ in range(500):
+for _ in range(1000):
     action, _stages = model.predict(obs)
     obs, reward, done, truncated, info = vec_env.step(action)
     image = vec_env.render()
@@ -105,6 +105,6 @@ for _ in range(500):
     if done or truncated:
         obs, info = vec_env.reset()
 
-# with imageio.get_writer("../media/test.gif", mode="I") as writer:
-#     for idx, frame in enumerate(frames):
-#         writer.append_data(frame)
+with imageio.get_writer("../media/test.gif", mode="I") as writer:
+    for idx, frame in enumerate(frames):
+        writer.append_data(frame)
