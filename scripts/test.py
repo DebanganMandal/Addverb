@@ -1,24 +1,28 @@
 from stable_baselines3 import PPO
 from quadruped_envs import QuadrupedWalkPPO
-import cv2
-import imageio
+import imageio, numpy as np
 
-vec_env = QuadrupedWalkPPO(render_mode="rgb_array")
-model = PPO.load("ppo_quadruped.zip")
+env = QuadrupedWalkPPO(render_mode="rgb_array")  # critical for off-screen
+model = PPO.load("ppo_quadruped.zip", device="cpu")
 
-obs, info = vec_env.reset()
+obs, info = env.reset(seed=0)
 frames = []
 
-for _ in range(500):
-    action, _stages = model.predict(obs)
-    obs, reward, done, truncated, info = vec_env.step(action)
-    image = vec_env.render()
-    if _%5 == 0:
-        frames.append(image)
+try:
+    for t in range(1000):
+        action, _ = model.predict(obs, deterministic=True)
+        obs, reward, terminated, truncated, info = env.step(action)
 
-    if done or truncated:
-        obs, info = vec_env.reset()
+        # request a specific size to avoid zero-dim contexts on some systems
+        frame = env.render()  # Gymnasium’s mujoco env respects render_mode
+        if frame is not None and t % 5 == 0:
+            if frame.dtype != np.uint8:
+                frame = frame.astype(np.uint8)
+            frames.append(frame)
 
-# with imageio.get_writer("../media/test.gif", mode="I") as writer:
-#     for idx, frame in enumerate(frames):
-#         writer.append_data(frame)
+        if terminated or truncated:
+            obs, info = env.reset()
+finally:
+    env.close()  # prevents those OffScreenViewer.__del__ EGL errors
+
+imageio.mimsave("../media/test.gif", frames, duration=0.05)
