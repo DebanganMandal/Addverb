@@ -18,10 +18,11 @@ Clone this repo by:
 4. Change directory to scripts, run `python vec_learn.py`, and you will notice a zip file by the name `ppo_quadruped.zip`, which contains the NN weights and te RL parameters
 5. Run `python test.py` and check the test.gif for rendered frames of your trained quadruped
 
-## Ouput GIF
-![Sample Ouput GIF](media/test.gif)
+## Ouput VIDEO
+<!-- ![Sample Ouput GIF](./scripts/runs/quad_ppo/videos/quad_walk-step-0-to-step-2000.mp4) -->
    
 ### References
 1. https://github.com/google-deepmind/mujoco_menagerie/tree/main/unitree_go1
 2. https://gymnasium.farama.org/
 3. https://stable-baselines3.readthedocs.io/en/master/modules/ppo.html
+4. https://github.com/nimazareian/quadruped-rl-locomotion/tree/main

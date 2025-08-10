@@ -4,7 +4,7 @@ from stable_baselines3 import PPO
 from stable_baselines3.common.env_util import make_vec_env
 from stable_baselines3.common.callbacks import EvalCallback
 
-env = QuadrupedWalkPPO(render_mode="rgb_array")
+env = QuadrupedWalkPPO(render_mode="None")
 check_env(env)
 ppo_vec_env = make_vec_env(QuadrupedWalkPPO, n_envs=2)
 eval_callback = EvalCallback(env, best_model_save_path='./logs/', log_path='./logs/', eval_freq=10000, deterministic=True, render=False)

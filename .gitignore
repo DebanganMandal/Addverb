@@ -1,0 +1,7 @@
+./media/
+./scripts/logs
+./scripts/tb/
+./scripts/ppo_quadruped.zip
+./scripts/test.py
+./scripts/vec_learn.py
+./scripts/rough.py
