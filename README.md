@@ -19,8 +19,11 @@ Clone this repo by:
 5. Run `python test.py` and check the test.gif for rendered frames of your trained quadruped
 
 ## Ouput VIDEO
-<!-- ![Sample Ouput GIF](./scripts/runs/quad_ppo/videos/quad_walk-step-0-to-step-2000.mp4) -->
    
+
+https://github.com/user-attachments/assets/f1d4954a-51b1-414e-bd55-e173d8c4e1b5
+
+
 ### References
 1. https://github.com/google-deepmind/mujoco_menagerie/tree/main/unitree_go1
 2. https://gymnasium.farama.org/
