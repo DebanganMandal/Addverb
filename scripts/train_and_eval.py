@@ -87,15 +87,15 @@ model = PPO(
 )
 
 # --------------- TRAIN ---------------
-# model.learn(
-#     total_timesteps=TOTAL_STEPS,
-#     callback=CallbackList([sync_cb, eval_cb, ckpt_cb]),
-#     tb_log_name="ppo_quadruped_v1",
-# )
+model.learn(
+    total_timesteps=TOTAL_STEPS,
+    callback=CallbackList([sync_cb, eval_cb, ckpt_cb]),
+    tb_log_name="ppo_quadruped_v1",
+)
 
-# # save artifacts
-# model.save(os.path.join(CKPT_DIR, "ppo_quadruped_final"))
-# train_env.save(os.path.join(CKPT_DIR, "vecnormalize_final.pkl"))
+# save artifacts
+model.save(os.path.join(CKPT_DIR, "ppo_quadruped_final"))
+train_env.save(os.path.join(CKPT_DIR, "vecnormalize_final.pkl"))
 
 # --------------- PLAYBACK & VIDEO (off-screen) ---------------
 # Tip (headless): export MUJOCO_GL=egl; ensure nvidia-smi works

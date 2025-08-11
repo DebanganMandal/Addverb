@@ -95,7 +95,18 @@ class QuadrupedWalkPPO(MujocoEnv, utils.EzPickle):
     def contact_cost(self):
         contact_cost = self._contact_cost_weight * np.sum(np.square(self.contact_forces))
         return contact_cost
-
+    
+    @property
+    def healthy_reward(self):
+        return self.is_healthy * self._healthy_reward
+    
+    @property
+    def is_healthy(self):
+        state = self.state_vector()
+        min_z, max_z = self._healthy_z_range
+        is_healthy = np.isfinite(state).all() and min_z <= state[2] <= max_z
+        return is_healthy
+    
     def control_cost(self, action):
         control_cost = self._ctrl_cost_weight * np.sum(np.square(action))
         return control_cost
@@ -114,20 +125,42 @@ class QuadrupedWalkPPO(MujocoEnv, utils.EzPickle):
         observation = self._get_obs()
         
         # Get rewards
+        forward_reward = x_velocity * self._forward_reward_weight
+        healthy_reward = self.healthy_reward
+        
+        rewards = forward_reward + healthy_reward
+
+        # Get costs
         control_cost = self.control_cost(action)
         contact_cost = self.contact_cost
-        reward = (x_velocity*self._forward_reward_weight+self._healthy_reward) - (control_cost+contact_cost)
-        
+        costs = control_cost + contact_cost
+
+        # Find total reward
+        reward = rewards - costs
+
+        reward_info = {
+            "reward_forward": forward_reward,
+            "reward_ctrl": -control_cost,
+            "reward_contact": -contact_cost,
+            "reward_survive": healthy_reward,
+        }
+
         # Check termination
-        min_z, max_z = self._healthy_z_range
-        state = self.state_vector()
-        is_healthy = np.isfinite(state).all() and min_z <= state[2] <= max_z
-        terminated = (not is_healthy) and self._terminate_when_unhealthy
+        terminated = (not self.is_healthy) and self._terminate_when_unhealthy
 
         if self.render_mode == "human":
             self.render()
 
-        return observation, reward, terminated, False, {}
+        info = {
+            "x_position": self.data.qpos[0],
+            "y_position": self.data.qpos[1],
+            "distance_from_origin": np.linalg.norm(self.data.qpos[0:2], ord=2),
+            "x_velocity": x_velocity,
+            "y_velocity": y_velocity,
+            **reward_info,
+        }
+
+        return observation, reward, terminated, False, info
 
     def reset_model(self):
         noise_low = -self._reset_noise_scale
@@ -140,6 +173,13 @@ class QuadrupedWalkPPO(MujocoEnv, utils.EzPickle):
 
         observation = self._get_obs()
         return observation
+    
+    def _get_reset_info(self):
+        return {
+            "x_position": self.data.qpos[0],
+            "y_position": self.data.qpos[1],
+            "distance_from_origin": np.linalg.norm(self.data.qpos[0:2], ord=2),
+        }
 
     def _get_obs(self):
         position = self.data.qpos.flatten()
